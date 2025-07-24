@@ -1,0 +1,34 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+    
+    - name: Pull Vercel environment information
+      run: vercel pull --yes --environment=production --token ${{ secrets.VERCEL_TOKEN }}
+    
+    - name: Build project
+      run: vercel build --token ${{ secrets.VERCEL_TOKEN }}
+    
+    - name: Deploy to Vercel
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }}
+        else
+          vercel --token ${{ secrets.VERCEL_TOKEN }}
+        fi
