@@ -13,7 +13,7 @@ type CookieOptions = {
   sameSite?: 'lax' | 'strict' | 'none';
 };
 
-// For both Server Components and API Routes
+// For Server Components
 export function createServerComponentClient() {
   const cookieStore = cookies();
   
@@ -46,11 +46,51 @@ export function createServerComponentClient() {
         },
       },
     }
-  ) as any; // Type assertion to handle the Supabase client type
+  ) as any;
+}
+
+// For Route Handlers (API routes)
+export function createRouteHandlerClient() {
+  const cookieStore = cookies();
+  
+  return createSupabaseServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options } as any);
+            return Promise.resolve();
+          } catch (error) {
+            console.error('Error setting cookie in route handler:', error);
+            return Promise.reject(error);
+          }
+        },
+        remove(name: string, options: Omit<CookieOptions, 'name' | 'value'>) {
+          try {
+            cookieStore.set({ 
+              name, 
+              value: '', 
+              ...options, 
+              maxAge: 0 
+            } as any);
+            return Promise.resolve();
+          } catch (error) {
+            console.error('Error removing cookie in route handler:', error);
+            return Promise.reject(error);
+          }
+        },
+      },
+    }
+  ) as any;
 }
 
 // Alias for API routes for clarity
-export const createRouteHandlerClient = createServerComponentClient;
+// Note: Using the dedicated createRouteHandlerClient function above
 
 // For backward compatibility
 export const supabaseServer = createServerComponentClient();
