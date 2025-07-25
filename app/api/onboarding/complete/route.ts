@@ -1,6 +1,9 @@
-import { createRouteHandlerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+
+// Initialize Supabase client with environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function POST(request: Request) {
   try {
@@ -14,19 +17,43 @@ export async function POST(request: Request) {
       shippingAddress
     } = requestBody;
 
-    // Initialize Supabase with the route handler client
-    const supabase = createRouteHandlerClient();
-    
-    // Get the session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase URL or Service Role Key');
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Server configuration error' },
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    
+    // Verify the JWT from the Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No token provided' },
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
+    
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid token' },
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+
 
     // Validate required fields
     if (!userId || !calibers || monthlyBudget === undefined || !shippingAddress) {
@@ -37,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     // Verify the authenticated user matches the userId
-    if (session.user.id !== userId) {
+    if (user.id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403, headers: { 'Content-Type': 'application/json' } }
