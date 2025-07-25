@@ -7,33 +7,30 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '../../../../lib/supabase/client';
 import { Skeleton } from '../../../../components/ui/skeleton';
 
-type Accessory = {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  image_url?: string;
-};
+import { Product } from './caliber-selection';
 
-type AccessoryPreferencesProps = {
+interface AccessoryPreferencesProps {
   selectedAccessories: string[];
   onUpdateAccessories: (accessories: string[]) => void;
-};
+}
 
 export function AccessoryPreferences({ selectedAccessories, onUpdateAccessories }: AccessoryPreferencesProps) {
   const supabase = createClient();
 
-  const { data: accessories = [], isLoading } = useQuery<Accessory[]>({
+  const { data: accessories = [], isLoading, error } = useQuery<Product[], Error>({
     queryKey: ['accessories'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Product[]> => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, category, image_url')
+        .select('id, name, description, category, image_url, price, stock, created_at, updated_at')
         .neq('category', 'ammunition')
         .order('category')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching accessories:', error);
+        throw error;
+      }
       return data || [];
     },
   });
@@ -46,8 +43,10 @@ export function AccessoryPreferences({ selectedAccessories, onUpdateAccessories 
     }
   };
 
-  // Group accessories by category
-  const accessoriesByCategory = accessories.reduce<Record<string, Accessory[]>>((acc, accessory) => {
+  // Group accessories by category with type safety
+  const accessoriesByCategory = (accessories as Product[]).reduce<Record<string, Product[]>>((acc, accessory) => {
+    if (!accessory.category) return acc;
+    
     if (!acc[accessory.category]) {
       acc[accessory.category] = [];
     }
@@ -91,8 +90,9 @@ export function AccessoryPreferences({ selectedAccessories, onUpdateAccessories 
         </CardHeader>
         <CardContent className="space-y-8">
           {Object.entries(accessoriesByCategory).map(([category, categoryAccessories]) => (
+            // Skip empty categories or non-array values
             <div key={category} className="space-y-4">
-              <h3 className="text-lg font-medium capitalize">{category}</h3>
+              <h3 className="text-lg font-medium capitalize">{category || 'Uncategorized'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categoryAccessories.map((accessory) => (
                   <div

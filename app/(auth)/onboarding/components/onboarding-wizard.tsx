@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '../../../../components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Progress } from '../../../../components/ui/progress';
 import { CaliberSelection } from './caliber-selection';
 import { BudgetSetup } from './budget-setup';
 import { AccessoryPreferences } from './accessory-preferences';
@@ -17,18 +17,27 @@ const STEPS = [
   { id: 'review', title: 'Review & Confirm' },
 ];
 
-type FormData = {
-  calibers: Array<{ id: string; name: string; selected: boolean; monthlyAmount: number }>;
+export interface CaliberPreference {
+  id: string;
+  name: string;
+  selected: boolean;
+  monthlyAmount: number;
+}
+
+export interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+export interface FormData {
+  calibers: CaliberPreference[];
   monthlyBudget: number;
   accessories: string[];
-  shippingAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-};
+  shippingAddress: ShippingAddress;
+}
 
 export function OnboardingWizard({ userId }: { userId: string }) {
   const router = useRouter();
@@ -90,41 +99,55 @@ export function OnboardingWizard({ userId }: { userId: string }) {
     }
   };
 
-  const updateFormData = (updates: Partial<FormData>) => {
-    setFormData((prev) => ({
+  const updateFormData = useCallback(<K extends keyof FormData>(
+    field: K,
+    value: FormData[K]
+  ): void => {
+    setFormData((prev: FormData) => ({
       ...prev,
-      ...updates,
+      [field]: value,
     }));
-  };
+  }, []);
+
+  // Helper function to update nested shipping address fields
+  const updateShippingAddress = useCallback((address: ShippingAddress): void => {
+    setFormData((prev: FormData) => ({
+      ...prev,
+      shippingAddress: address,
+    }));
+  }, []);
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 0:
+    const step = STEPS[currentStep];
+    if (!step) return null;
+
+    switch (step.id) {
+      case 'caliber':
         return (
           <CaliberSelection
             selectedCalibers={formData.calibers}
-            onUpdateCalibers={(calibers) => updateFormData({ calibers })}
+            onUpdateCalibers={(calibers) => updateFormData('calibers', calibers)}
           />
         );
-      case 1:
+      case 'budget':
         return (
           <BudgetSetup
             monthlyBudget={formData.monthlyBudget}
-            onBudgetChange={(monthlyBudget) => updateFormData({ monthlyBudget })}
+            onBudgetChange={(budget) => updateFormData('monthlyBudget', budget)}
           />
         );
-      case 2:
+      case 'accessories':
         return (
           <AccessoryPreferences
             selectedAccessories={formData.accessories}
-            onUpdateAccessories={(accessories) => updateFormData({ accessories })}
+            onUpdateAccessories={(accessories) => updateFormData('accessories', accessories)}
           />
         );
-      case 3:
+      case 'review':
         return (
           <ReviewAndConfirm
             formData={formData}
-            onUpdateShippingAddress={(shippingAddress) => updateFormData({ shippingAddress })}
+            onUpdateShippingAddress={(address) => updateFormData('shippingAddress', address)}
           />
         );
       default:

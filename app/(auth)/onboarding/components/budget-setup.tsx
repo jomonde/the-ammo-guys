@@ -7,10 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../components/ui/tooltip';
 
-type BudgetSetupProps = {
+interface BudgetSetupProps {
   monthlyBudget: number;
   onBudgetChange: (budget: number) => void;
-};
+}
 
 export function BudgetSetup({ monthlyBudget, onBudgetChange }: BudgetSetupProps) {
   const BUDGET_RANGES = [
@@ -27,13 +27,16 @@ export function BudgetSetup({ monthlyBudget, onBudgetChange }: BudgetSetupProps)
     return range ? range.label : 'Custom';
   };
 
-  const handleSliderChange = (value: number[]) => {
-    onBudgetChange(value[0]);
+  const handleSliderChange = (values: [number]) => {
+    // The slider component passes a single number in an array
+    onBudgetChange(values[0]);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value) || 0;
-    onBudgetChange(Math.min(Math.max(value, 25), 1000));
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      onBudgetChange(Math.min(Math.max(value, 25), 1000));
+    }
   };
 
   return (
@@ -66,6 +69,7 @@ export function BudgetSetup({ monthlyBudget, onBudgetChange }: BudgetSetupProps)
                 value={[monthlyBudget]}
                 onValueChange={handleSliderChange}
                 className="py-4"
+                aria-label="Monthly budget slider"
               />
               <div className="flex justify-between text-xs text-muted-foreground px-1">
                 <span>$25</span>

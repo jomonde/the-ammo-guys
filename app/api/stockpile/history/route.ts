@@ -1,5 +1,26 @@
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { StockpileHistoryResponse } from '@/types/stockpile';
+
+interface ProductData {
+  id?: string;
+  name?: string;
+  caliber?: string;
+  image_url?: string;
+}
+
+interface HistoryRecord {
+  id: string;
+  products: ProductData | null;
+  quantity_change: number;
+  change_type: string;
+  reference_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
 
 export async function GET(request: Request) {
   try {
@@ -57,21 +78,24 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    // Process the data for the response
-    const processedHistory = (history || []).map(record => ({
-      id: record.id,
-      productId: record.products?.id,
-      productName: record.products?.name,
-      caliber: record.products?.caliber,
-      imageUrl: record.products?.image_url,
-      quantityChange: record.quantity_change,
-      changeType: record.change_type,
-      referenceId: record.reference_id,
-      notes: record.notes,
-      timestamp: record.created_at
-    }));
+    // Process the data for the response with proper null checks
+    const processedHistory = (history as HistoryRecord[] || []).map(record => {
+      const product = record.products || {};
+      return {
+        id: record.id,
+        productId: product.id || '',
+        productName: product.name || null,
+        caliber: product.caliber || null,
+        imageUrl: product.image_url || null,
+        quantityChange: record.quantity_change || 0,
+        changeType: record.change_type || 'unknown',
+        referenceId: record.reference_id || null,
+        notes: record.notes || null,
+        timestamp: record.created_at || new Date().toISOString()
+      };
+    });
 
-    return NextResponse.json({
+    const response: StockpileHistoryResponse = {
       success: true,
       data: {
         items: processedHistory,
@@ -82,14 +106,18 @@ export async function GET(request: Request) {
           hasMore: (count || 0) > offset + limit
         }
       }
-    });
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Error fetching stockpile history:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json(
       { 
+        success: false,
         error: 'Failed to fetch stockpile history',
-        details: (error as Error).message 
+        details: errorMessage 
       },
       { status: 500 }
     );

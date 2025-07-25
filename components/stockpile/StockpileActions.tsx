@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import { DollarSign, Package, Settings, BarChart2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

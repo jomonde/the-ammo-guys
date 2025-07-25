@@ -1,59 +1,80 @@
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// Using relative imports to avoid module resolution issues
+import { Checkbox } from '../../../../components/ui/checkbox';
+import { Label } from '../../../../components/ui/label';
+import { Input } from '../../../../components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 
-type Caliber = {
+export interface Product {
   id: string;
   name: string;
-  description?: string;
-  image_url?: string;
-};
+  description: string | null;
+  image_url: string | null;
+  category: string;
+  price: number;
+  stock: number;
+  created_at: string;
+  updated_at: string;
+}
 
-type CaliberSelectionProps = {
-  selectedCalibers: Array<{ id: string; name: string; selected: boolean; monthlyAmount: number }>;
-  onUpdateCalibers: (calibers: Array<{ id: string; name: string; selected: boolean; monthlyAmount: number }>) => void;
-};
+export interface CaliberPreference {
+  id: string;
+  name: string;
+  selected: boolean;
+  monthlyAmount: number;
+}
+
+interface CaliberSelectionProps {
+  selectedCalibers: CaliberPreference[];
+  onUpdateCalibers: (calibers: CaliberPreference[]) => void;
+}
 
 export function CaliberSelection({ selectedCalibers, onUpdateCalibers }: CaliberSelectionProps) {
   const supabase = createClient();
 
-  const { data: calibers = [], isLoading } = useQuery<Caliber[]>({
+  const { data: calibers = [], isLoading } = useQuery({
     queryKey: ['calibers'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Product[]> => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, image_url')
+        .select('*')
         .eq('category', 'ammunition')
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return (data as Product[]) || [];
     },
   });
 
-  const handleCaliberToggle = (caliber: Caliber, checked: boolean) => {
+  const handleCaliberToggle = (caliber: Product, checked: boolean) => {
     if (checked) {
-      // Add caliber to selected calibers
-      onUpdateCalibers([
-        ...selectedCalibers,
-        { id: caliber.id, name: caliber.name, selected: true, monthlyAmount: 0 },
-      ]);
+      // Add caliber to selected calibers if not already selected
+      if (!selectedCalibers.some(c => c.id === caliber.id)) {
+        onUpdateCalibers([
+          ...selectedCalibers,
+          { 
+            id: caliber.id, 
+            name: caliber.name, 
+            selected: true, 
+            monthlyAmount: 0 
+          },
+        ]);
+      }
     } else {
       // Remove caliber from selected calibers
       onUpdateCalibers(selectedCalibers.filter((c) => c.id !== caliber.id));
     }
   };
 
-  const handleMonthlyAmountChange = (caliberId: string, amount: string) => {
+  const handleMonthlyAmountChange = (e: React.ChangeEvent<HTMLInputElement>, caliberId: string) => {
+    const amount = parseFloat(e.target.value) || 0;
     onUpdateCalibers(
       selectedCalibers.map((caliber) =>
         caliber.id === caliberId
-          ? { ...caliber, monthlyAmount: parseFloat(amount) || 0 }
+          ? { ...caliber, monthlyAmount: amount }
           : caliber
       )
     );
@@ -66,7 +87,7 @@ export function CaliberSelection({ selectedCalibers, onUpdateCalibers }: Caliber
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {calibers.map((caliber) => {
+        {Array.isArray(calibers) && calibers.map((caliber) => {
           const isSelected = selectedCalibers.some((c) => c.id === caliber.id);
           const monthlyAmount = selectedCalibers.find((c) => c.id === caliber.id)?.monthlyAmount || 0;
           
@@ -105,14 +126,14 @@ export function CaliberSelection({ selectedCalibers, onUpdateCalibers }: Caliber
                     <div className="flex items-center space-x-2">
                       <span className="text-muted-foreground">$</span>
                       <Input
-                        id={`amount-${caliber.id}`}
                         type="number"
                         min="0"
-                        step="5"
+                        step="0.01"
                         value={monthlyAmount}
-                        onChange={(e) => handleMonthlyAmountChange(caliber.id, e.target.value)}
+                        onChange={(e) => handleMonthlyAmountChange(e, caliber.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full"
+                        className="w-24"
+                        placeholder="0.00"
                       />
                     </div>
                   </div>

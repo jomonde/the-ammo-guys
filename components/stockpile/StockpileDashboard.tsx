@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { StockpileOverview } from '@/components/stockpile/StockpileOverview';
-import { StockpileItems } from '@/components/stockpile/StockpileItems';
-import { StockpileActions } from '@/components/stockpile/StockpileActions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/utils';
+import { StockpileOverview } from './StockpileOverview';
+import { StockpileItems } from './StockpileItems';
+import { StockpileActions } from './StockpileActions';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Skeleton } from '../ui/skeleton';
+import { formatCurrency } from '../../lib/utils';
+import { Button } from '../ui/button';
+import { ArrowRight, Box, Clock, DollarSign, Package } from 'lucide-react';
+import { Progress } from '@radix-ui/react-progress';
 
 type StockpileSummary = {
   totalValue: number;

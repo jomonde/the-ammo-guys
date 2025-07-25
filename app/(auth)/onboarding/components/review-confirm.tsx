@@ -1,25 +1,25 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Label } from '../../../../components/ui/label';
+import { Input } from '../../../../components/ui/input';
+import { Button } from '../../../../components/ui/button';
 import { useState } from 'react';
 
-type Address = {
+export interface Address {
   street: string;
   city: string;
   state: string;
   zipCode: string;
   country: string;
-};
+}
 
-type FormData = {
+export interface FormData {
   calibers: Array<{ id: string; name: string; selected: boolean; monthlyAmount: number }>;
   monthlyBudget: number;
   accessories: string[];
   shippingAddress: Address;
-};
+}
 
 type ReviewAndConfirmProps = {
   formData: FormData;
@@ -28,7 +28,7 @@ type ReviewAndConfirmProps = {
 
 export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAndConfirmProps) {
   const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [address, setAddress] = useState<Address>(formData.shippingAddress);
+  const [address, setAddress] = useState<Address>({...formData.shippingAddress});
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,6 +36,11 @@ export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAn
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateShippingAddress(address);
   };
 
   const handleSaveAddress = () => {
@@ -86,17 +91,35 @@ export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAn
           <div>
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-medium">Shipping Address</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditingAddress(!isEditingAddress)}
-              >
-                {isEditingAddress ? 'Cancel' : 'Edit'}
-              </Button>
+              {isEditingAddress ? (
+                <div className="flex space-x-2">
+                  <Button type="submit">
+                    Save Address
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setAddress({...formData.shippingAddress});
+                      setIsEditingAddress(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditingAddress(true)}
+                >
+                  Edit Address
+                </Button>
+              )}
             </div>
 
             {isEditingAddress ? (
-              <Card className="p-4 space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="street">Street Address</Label>
@@ -105,7 +128,8 @@ export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAn
                       name="street"
                       value={address.street}
                       onChange={handleAddressChange}
-                      placeholder="123 Main St"
+                      disabled={!isEditingAddress}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -115,29 +139,30 @@ export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAn
                       name="city"
                       value={address.city}
                       onChange={handleAddressChange}
-                      placeholder="Anytown"
+                      disabled={!isEditingAddress}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">State/Province</Label>
                     <Input
                       id="state"
                       name="state"
                       value={address.state}
                       onChange={handleAddressChange}
-                      placeholder="CA"
-                      maxLength={2}
-                      className="uppercase"
+                      disabled={!isEditingAddress}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Label htmlFor="zipCode">ZIP/Postal Code</Label>
                     <Input
                       id="zipCode"
                       name="zipCode"
                       value={address.zipCode}
                       onChange={handleAddressChange}
-                      placeholder="12345"
+                      disabled={!isEditingAddress}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -151,10 +176,7 @@ export function ReviewAndConfirm({ formData, onUpdateShippingAddress }: ReviewAn
                     />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveAddress}>Save Address</Button>
-                </div>
-              </Card>
+              </form>
             ) : (
               <Card className="p-4">
                 <div className="space-y-1">

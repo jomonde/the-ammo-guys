@@ -117,3 +117,63 @@ export interface StockpileStats {
     rounds: number;
   };
 }
+
+export interface StockpileHistoryItem {
+  id: string;
+  productId: string;
+  productName: string | null;
+  caliber: string | null;
+  imageUrl: string | null;
+  quantityChange: number;
+  changeType: string;
+  referenceId: string | null;
+  notes: string | null;
+  timestamp: string;
+}
+
+export interface StockpileSummaryItem {
+  id: string;
+  productId: string | null;
+  name: string | null;
+  caliber: string | null;
+  quantity: number | null;
+  target: number | null;
+  price: number | null;
+  imageUrl: string | null;
+  value: number;
+  progress: number;
+  lastAllocation: string | null;
+  lastShipment: string | null;
+}
+
+export interface StockpileSummaryTotals {
+  totalValue: number;
+  totalRounds: number;
+  totalTarget: number;
+  valueProgress: number;
+  roundsProgress: number;
+  items: number;
+  lastUpdated: string;
+}
+
+export interface StockpileSummaryResponse {
+  success: boolean;
+  data: {
+    summary: StockpileSummaryTotals;
+    items: StockpileSummaryItem[];
+    triggers: any[]; 
+  };
+}
+
+export interface StockpileHistoryResponse {
+  success: boolean;
+  data: {
+    items: StockpileHistoryItem[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      hasMore: boolean;
+    };
+  };
+}
