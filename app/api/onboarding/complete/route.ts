@@ -1,9 +1,9 @@
-import { createServerComponentClient } from '@/lib/supabase/server';
+import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerComponentClient();
+    const supabase = createRouteHandlerClient();
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
