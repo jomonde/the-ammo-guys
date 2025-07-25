@@ -1,17 +1,24 @@
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const requestUrl = new URL(request.url);
+    // Get the request body
+    const requestBody = await request.json();
+    const {
+      userId,
+      calibers,
+      monthlyBudget,
+      accessories = [],
+      shippingAddress
+    } = requestBody;
+
+    // Initialize Supabase with the route handler client
     const supabase = createRouteHandlerClient();
     
-    // Get the session using the auth helpers
-    const { 
-      data: { session }, 
-      error: sessionError 
-    } = await supabase.auth.getSession();
+    // Get the session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
       console.error('Session error:', sessionError);
@@ -20,26 +27,6 @@ export async function POST(request: NextRequest) {
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    // Parse the request body
-    let requestBody;
-    try {
-      requestBody = await request.json();
-    } catch (parseError) {
-      console.error('Error parsing request body:', parseError);
-      return NextResponse.json(
-        { error: 'Invalid request body' },
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const {
-      userId,
-      calibers,
-      monthlyBudget,
-      accessories,
-      shippingAddress
-    } = requestBody;
 
     // Validate required fields
     if (!userId || !calibers || monthlyBudget === undefined || !shippingAddress) {
@@ -57,12 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Start a transaction
+    // Call the stored procedure to complete onboarding
     const { data, error } = await supabase.rpc('complete_onboarding', {
       p_user_id: userId,
       p_calibers: calibers,
       p_monthly_budget: monthlyBudget,
-      p_accessories: accessories || [],
+      p_accessories: accessories,
       p_shipping_address: shippingAddress
     });
 
@@ -75,6 +62,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data 
     });
+
   } catch (error) {
     console.error('Error completing onboarding:', error);
     return NextResponse.json(
@@ -85,4 +73,14 @@ export async function POST(request: NextRequest) {
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
+}
+
+// Handle OPTIONS for CORS preflight
+// This is required for CORS to work with API routes
+export async function OPTIONS() {
+  const response = new NextResponse(null, { status: 204 });
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return response;
 }
