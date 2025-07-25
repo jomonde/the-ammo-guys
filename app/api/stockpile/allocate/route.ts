@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // Get user's subscription to check budget
     const { data: subscription } = await supabase
       .from('subscriptions')
-      .select('monthly_budget, next_allocation_date, allocation_frequency')
+      .select('id, monthly_budget, next_allocation_date, allocation_frequency')
       .eq('user_id', session.user.id)
       .single();
 
