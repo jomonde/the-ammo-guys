@@ -1,12 +1,15 @@
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    // Get the session using the auth helpers
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (!session) {
+    if (sessionError || !session) {
+      console.error('Session error:', sessionError);
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
