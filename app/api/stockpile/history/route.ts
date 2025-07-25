@@ -1,6 +1,5 @@
 import { createRouteHandlerClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +9,7 @@ export async function GET(request: Request) {
     const productId = searchParams.get('productId');
     const changeType = searchParams.get('changeType') as 'allocation' | 'shipment' | 'adjustment' | null;
     
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient();
     
     // Get the current user session
     const { data: { session } } = await supabase.auth.getSession();

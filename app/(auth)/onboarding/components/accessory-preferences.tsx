@@ -1,11 +1,11 @@
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '../../../../components/ui/checkbox';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Label } from '../../../../components/ui/label';
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
+import { createClient } from '../../../../lib/supabase/client';
+import { Skeleton } from '../../../../components/ui/skeleton';
 
 type Accessory = {
   id: string;
